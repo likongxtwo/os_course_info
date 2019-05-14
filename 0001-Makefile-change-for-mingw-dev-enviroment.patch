@@ -1,0 +1,406 @@
+From 09eea055f17e13fc7bdf1e82d822f2166c650ad5 Mon Sep 17 00:00:00 2001
+From: Xiaolin Zhang <xlzhang76@gmail.com>
+Date: Wed, 1 Oct 2014 19:04:30 +0800
+Subject: [PATCH] Makefile change for mingw dev enviroment.
+
+to added 2 targers for mingw dev enviroment.
+to build: make
+to run: make qemu-mingw
+to debug: make debug-mingw
+---
+ labcodes/lab1/Makefile | 15 +++++++++++++--
+ labcodes/lab2/Makefile | 14 ++++++++++++--
+ labcodes/lab3/Makefile | 13 ++++++++++++-
+ labcodes/lab4/Makefile | 13 ++++++++++++-
+ labcodes/lab5/Makefile | 13 ++++++++++++-
+ labcodes/lab6/Makefile | 13 ++++++++++++-
+ labcodes/lab7/Makefile | 13 ++++++++++++-
+ labcodes/lab8/Makefile | 19 +++++++++++++++----
+ 8 files changed, 100 insertions(+), 13 deletions(-)
+
+diff --git a/labcodes/lab1/Makefile b/labcodes/lab1/Makefile
+index 274bb69..ed454d1 100644
+--- a/labcodes/lab1/Makefile
++++ b/labcodes/lab1/Makefile
+@@ -10,6 +10,8 @@ V       := @
+ ifndef GCCPREFIX
+ GCCPREFIX := $(shell if i386-elf-objdump -i 2>&1 | grep '^elf32-i386$$' >/dev/null 2>&1; \
+ 	then echo 'i386-elf-'; \
++	elif i386-jos-elf-objdump -i 2>&1 | grep 'elf32-i386' >/dev/null 2>&1; \
++	then echo 'i386-jos-elf-'; \
+ 	elif objdump -i 2>&1 | grep 'elf32-i386' >/dev/null 2>&1; \
+ 	then echo ''; \
+ 	else echo "***" 1>&2; \
+@@ -30,6 +32,8 @@ QEMU := $(shell if which qemu-system-i386 > /dev/null; \
+ 	then echo 'i386-elf-qemu'; exit; \
+ 	elif which qemu > /dev/null; \
+ 	then echo 'qemu'; exit; \
++	elif which qemu.exe > /dev/null; \
++	then echo 'qemu.exe'; exit; \
+ 	else \
+ 	echo "***" 1>&2; \
+ 	echo "*** Error: Couldn't find a working QEMU executable." 1>&2; \
+@@ -219,12 +223,19 @@ debug: $(UCOREIMG)
+ 	$(V)$(QEMU) -S -s -parallel stdio -hda $< -serial null &
+ 	$(V)sleep 2
+ 	$(V)$(TERMINAL) -e "gdb -q -tui -x tools/gdbinit"
+-	
++
+ debug-nox: $(UCOREIMG)
+ 	$(V)$(QEMU) -S -s -serial mon:stdio -hda $< -nographic &
+ 	$(V)sleep 2
+ 	$(V)$(TERMINAL) -e "gdb -q -x tools/gdbinit"
+ 
++qemu-mingw: $(UCOREIMG)
++	$(V)$(QEMU) -hda $< -serial null
++debug-mingw: $(UCOREIMG)
++	$(V)$(QEMU) -S -s -gdb tcp::1234,ipv4 -hda $< -serial null &
++	$(V)sleep 2
++	$(V)gdb -q -x tools/gdbinit
++
+ .PHONY: grade touch
+ 
+ GRADE_GDB_IN	:= .gdb.in
+@@ -264,5 +275,5 @@ tags:
+ 	@echo TAGS ALL
+ 	$(V)rm -f cscope.files cscope.in.out cscope.out cscope.po.out tags
+ 	$(V)find . -type f -name "*.[chS]" >cscope.files
+-	$(V)cscope -bq 
++	$(V)cscope -bq
+ 	$(V)ctags -L cscope.files
+diff --git a/labcodes/lab2/Makefile b/labcodes/lab2/Makefile
+index f63fc86..04277aa 100644
+--- a/labcodes/lab2/Makefile
++++ b/labcodes/lab2/Makefile
+@@ -10,6 +10,8 @@ V       := @
+ ifndef GCCPREFIX
+ GCCPREFIX := $(shell if i386-ucore-elf-objdump -i 2>&1 | grep '^elf32-i386$$' >/dev/null 2>&1; \
+ 	then echo 'i386-ucore-elf-'; \
++	elif i386-jos-elf-objdump -i 2>&1 | grep 'elf32-i386' >/dev/null 2>&1; \
++	then echo 'i386-jos-elf-'; \
+ 	elif objdump -i 2>&1 | grep 'elf32-i386' >/dev/null 2>&1; \
+ 	then echo ''; \
+ 	else echo "***" 1>&2; \
+@@ -30,6 +32,8 @@ QEMU := $(shell if which qemu-system-i386 > /dev/null; \
+ 	then echo 'i386-elf-qemu'; exit; \
+ 	elif which qemu > /dev/null; \
+ 	then echo 'qemu'; exit; \
++	elif which qemu.exe > /dev/null; \
++	then echo 'qemu.exe'; exit; \
+ 	else \
+ 	echo "***" 1>&2; \
+ 	echo "*** Error: Couldn't find a working QEMU executable." 1>&2; \
+@@ -251,6 +255,12 @@ debug-mon: targets
+ debug-nox: targets
+ 	$(V)$(QEMU) -S -s -serial mon:stdio $(QEMUOPTS) -nographic
+ 
++qemu-mingw: $(UCOREIMG)
++	$(V)$(QEMU) -hda $< -serial null
++debug-mingw: $(UCOREIMG)
++	$(V)$(QEMU) -S -s -gdb tcp::1234,ipv4 -hda $< -serial null &
++	$(V)sleep 2
++	$(V)gdb -q -x tools/gdbinit
+ .PHONY: grade touch
+ 
+ GRADE_GDB_IN	:= .gdb.in
+@@ -283,10 +293,10 @@ handin: distclean
+ 	$(V)$(TAR) -cf - `find . -type f -o -type d | grep -v '^\.$$' | grep -v '/CVS/' \
+ 					| grep -v '/\.git/' | grep -v '/\.svn/' | grep -v "$(HANDIN)"` \
+ 					| $(ZIP) > $(HANDIN)
+-					
++
+ tags:
+ 	@echo TAGS ALL
+ 	$(V)rm -f cscope.files cscope.in.out cscope.out cscope.po.out tags
+ 	$(V)find . -type f -name "*.[chS]" >cscope.files
+-	$(V)cscope -bq 
++	$(V)cscope -bq
+ 	$(V)ctags -L cscope.files
+diff --git a/labcodes/lab3/Makefile b/labcodes/lab3/Makefile
+index 52af7f6..a4f30e3 100644
+--- a/labcodes/lab3/Makefile
++++ b/labcodes/lab3/Makefile
+@@ -10,6 +10,8 @@ V       := @
+ ifndef GCCPREFIX
+ GCCPREFIX := $(shell if i386-ucore-elf-objdump -i 2>&1 | grep '^elf32-i386$$' >/dev/null 2>&1; \
+ 	then echo 'i386-ucore-elf-'; \
++	elif i386-jos-elf-objdump -i 2>&1 | grep 'elf32-i386' >/dev/null 2>&1; \
++	then echo 'i386-jos-elf-'; \
+ 	elif objdump -i 2>&1 | grep 'elf32-i386' >/dev/null 2>&1; \
+ 	then echo ''; \
+ 	else echo "***" 1>&2; \
+@@ -30,6 +32,8 @@ QEMU := $(shell if which qemu-system-i386 > /dev/null; \
+ 	then echo 'i386-elf-qemu'; exit; \
+ 	elif which qemu > /dev/null; \
+ 	then echo 'qemu'; exit; \
++	elif which qemu.exe > /dev/null; \
++	then echo 'qemu.exe'; exit; \
+ 	else \
+ 	echo "***" 1>&2; \
+ 	echo "*** Error: Couldn't find a working QEMU executable." 1>&2; \
+@@ -245,6 +249,13 @@ debug-nox: $(UCOREIMG) $(SWAPIMG)
+ 	$(V)sleep 2
+ 	$(V)$(TERMINAL) -e "$(GDB) -q -x tools/gdbinit"
+ 
++qemu-mingw: $(UCOREIMG)
++	$(V)$(QEMU) -hda $< -serial null
++debug-mingw: $(UCOREIMG)
++	$(V)$(QEMU) -S -s -gdb tcp::1234,ipv4 $(QEMUOPTS) -serial null &
++	$(V)sleep 2
++	$(V)gdb -q -x tools/gdbinit
++
+ .PHONY: grade touch
+ 
+ GRADE_GDB_IN	:= .gdb.in
+@@ -284,5 +295,5 @@ tags:
+ 	@echo TAGS ALL
+ 	$(V)rm -f cscope.files cscope.in.out cscope.out cscope.po.out tags
+ 	$(V)find . -type f -name "*.[chS]" >cscope.files
+-	$(V)cscope -bq 
++	$(V)cscope -bq
+ 	$(V)ctags -L cscope.files
+diff --git a/labcodes/lab4/Makefile b/labcodes/lab4/Makefile
+index 6cde461..3d2d8f0 100644
+--- a/labcodes/lab4/Makefile
++++ b/labcodes/lab4/Makefile
+@@ -10,6 +10,8 @@ V       := @
+ ifndef GCCPREFIX
+ GCCPREFIX := $(shell if i386-ucore-elf-objdump -i 2>&1 | grep '^elf32-i386$$' >/dev/null 2>&1; \
+ 	then echo 'i386-ucore-elf-'; \
++	elif i386-jos-elf-objdump -i 2>&1 | grep 'elf32-i386' >/dev/null 2>&1; \
++	then echo 'i386-jos-elf-'; \
+ 	elif objdump -i 2>&1 | grep 'elf32-i386' >/dev/null 2>&1; \
+ 	then echo ''; \
+ 	else echo "***" 1>&2; \
+@@ -30,6 +32,8 @@ QEMU := $(shell if which qemu-system-i386 > /dev/null; \
+ 	then echo 'i386-elf-qemu'; exit; \
+ 	elif which qemu > /dev/null; \
+ 	then echo 'qemu'; exit; \
++	elif which qemu.exe > /dev/null; \
++	then echo 'qemu.exe'; exit; \
+ 	else \
+ 	echo "***" 1>&2; \
+ 	echo "*** Error: Couldn't find a working QEMU executable." 1>&2; \
+@@ -249,6 +253,13 @@ debug-nox: $(UCOREIMG) $(SWAPIMG)
+ 	$(V)sleep 2
+ 	$(V)$(TERMINAL) -e "$(GDB) -q -x tools/gdbinit"
+ 
++qemu-mingw: $(UCOREIMG)
++	$(V)$(QEMU) -hda $< -serial null
++debug-mingw: $(UCOREIMG)
++	$(V)$(QEMU) -S -s -gdb tcp::1234,ipv4 $(QEMUOPTS) -serial null &
++	$(V)sleep 2
++	$(V)gdb -q -x tools/gdbinit
++
+ .PHONY: grade touch
+ 
+ GRADE_GDB_IN	:= .gdb.in
+@@ -288,5 +299,5 @@ tags:
+ 	@echo TAGS ALL
+ 	$(V)rm -f cscope.files cscope.in.out cscope.out cscope.po.out tags
+ 	$(V)find . -type f -name "*.[chS]" >cscope.files
+-	$(V)cscope -bq 
++	$(V)cscope -bq
+ 	$(V)ctags -L cscope.files
+diff --git a/labcodes/lab5/Makefile b/labcodes/lab5/Makefile
+index d7ce1ca..12560bb 100644
+--- a/labcodes/lab5/Makefile
++++ b/labcodes/lab5/Makefile
+@@ -10,6 +10,8 @@ V       := @
+ ifndef GCCPREFIX
+ GCCPREFIX := $(shell if i386-ucore-elf-objdump -i 2>&1 | grep '^elf32-i386$$' >/dev/null 2>&1; \
+ 	then echo 'i386-ucore-elf-'; \
++	elif i386-jos-elf-objdump -i 2>&1 | grep 'elf32-i386' >/dev/null 2>&1; \
++	then echo 'i386-jos-elf-'; \
+ 	elif objdump -i 2>&1 | grep 'elf32-i386' >/dev/null 2>&1; \
+ 	then echo ''; \
+ 	else echo "***" 1>&2; \
+@@ -30,6 +32,8 @@ QEMU := $(shell if which qemu-system-i386 > /dev/null; \
+ 	then echo 'i386-elf-qemu'; exit; \
+ 	elif which qemu > /dev/null; \
+ 	then echo 'qemu'; exit; \
++	elif which qemu.exe > /dev/null; \
++	then echo 'qemu.exe'; exit; \
+ 	else \
+ 	echo "***" 1>&2; \
+ 	echo "*** Error: Couldn't find a working QEMU executable." 1>&2; \
+@@ -288,6 +292,13 @@ debug-nox: $(UCOREIMG) $(SWAPIMG)
+ 	$(V)sleep 2
+ 	$(V)$(TERMINAL) -e "$(GDB) -q -x tools/gdbinit"
+ 
++qemu-mingw: $(UCOREIMG)
++	$(V)$(QEMU) -hda $< -serial null
++debug-mingw: $(UCOREIMG)
++	$(V)$(QEMU) -S -s -gdb tcp::1234,ipv4 $(QEMUOPTS) -serial null &
++	$(V)sleep 2
++	$(V)gdb -q -x tools/gdbinit
++
+ RUN_PREFIX	:= _binary_$(OBJDIR)_$(USER_PREFIX)
+ MAKEOPTS	:= --quiet --no-print-directory
+ 
+@@ -336,5 +347,5 @@ tags:
+ 	@echo TAGS ALL
+ 	$(V)rm -f cscope.files cscope.in.out cscope.out cscope.po.out tags
+ 	$(V)find . -type f -name "*.[chS]" >cscope.files
+-	$(V)cscope -bq 
++	$(V)cscope -bq
+ 	$(V)ctags -L cscope.files
+diff --git a/labcodes/lab6/Makefile b/labcodes/lab6/Makefile
+index 01701bb..2413f92 100644
+--- a/labcodes/lab6/Makefile
++++ b/labcodes/lab6/Makefile
+@@ -10,6 +10,8 @@ V       := @
+ ifndef GCCPREFIX
+ GCCPREFIX := $(shell if i386-ucore-elf-objdump -i 2>&1 | grep '^elf32-i386$$' >/dev/null 2>&1; \
+ 	then echo 'i386-ucore-elf-'; \
++	elif i386-jos-elf-objdump -i 2>&1 | grep 'elf32-i386' >/dev/null 2>&1; \
++	then echo 'i386-jos-elf-'; \
+ 	elif objdump -i 2>&1 | grep 'elf32-i386' >/dev/null 2>&1; \
+ 	then echo ''; \
+ 	else echo "***" 1>&2; \
+@@ -30,6 +32,8 @@ QEMU := $(shell if which qemu-system-i386 > /dev/null; \
+ 	then echo 'i386-elf-qemu'; exit; \
+ 	elif which qemu > /dev/null; \
+ 	then echo 'qemu'; exit; \
++	elif which qemu.exe > /dev/null; \
++	then echo 'qemu.exe'; exit; \
+ 	else \
+ 	echo "***" 1>&2; \
+ 	echo "*** Error: Couldn't find a working QEMU executable." 1>&2; \
+@@ -288,6 +292,13 @@ debug-nox: $(UCOREIMG) $(SWAPIMG)
+ 	$(V)sleep 2
+ 	$(V)$(TERMINAL) -e "$(GDB) -q -x tools/gdbinit"
+ 
++qemu-mingw: $(UCOREIMG)
++	$(V)$(QEMU) -hda $< -serial null
++debug-mingw: $(UCOREIMG)
++	$(V)$(QEMU) -S -s -gdb tcp::1234,ipv4 $(QEMUOPTS) -serial null &
++	$(V)sleep 2
++	$(V)gdb -q -x tools/gdbinit
++
+ RUN_PREFIX	:= _binary_$(OBJDIR)_$(USER_PREFIX)
+ MAKEOPTS	:= --quiet --no-print-directory
+ 
+@@ -336,5 +347,5 @@ tags:
+ 	@echo TAGS ALL
+ 	$(V)rm -f cscope.files cscope.in.out cscope.out cscope.po.out tags
+ 	$(V)find . -type f -name "*.[chS]" >cscope.files
+-	$(V)cscope -bq 
++	$(V)cscope -bq
+ 	$(V)ctags -L cscope.files
+diff --git a/labcodes/lab7/Makefile b/labcodes/lab7/Makefile
+index d905d04..dbf3404 100644
+--- a/labcodes/lab7/Makefile
++++ b/labcodes/lab7/Makefile
+@@ -10,6 +10,8 @@ V       := @
+ ifndef GCCPREFIX
+ GCCPREFIX := $(shell if i386-ucore-elf-objdump -i 2>&1 | grep '^elf32-i386$$' >/dev/null 2>&1; \
+ 	then echo 'i386-ucore-elf-'; \
++	elif i386-jos-elf-objdump -i 2>&1 | grep 'elf32-i386' >/dev/null 2>&1; \
++	then echo 'i386-jos-elf-'; \
+ 	elif objdump -i 2>&1 | grep 'elf32-i386' >/dev/null 2>&1; \
+ 	then echo ''; \
+ 	else echo "***" 1>&2; \
+@@ -30,6 +32,8 @@ QEMU := $(shell if which qemu-system-i386 > /dev/null; \
+ 	then echo 'i386-elf-qemu'; exit; \
+ 	elif which qemu > /dev/null; \
+ 	then echo 'qemu'; exit; \
++	elif which qemu.exe > /dev/null; \
++	then echo 'qemu.exe'; exit; \
+ 	else \
+ 	echo "***" 1>&2; \
+ 	echo "*** Error: Couldn't find a working QEMU executable." 1>&2; \
+@@ -288,6 +292,13 @@ debug-nox: $(UCOREIMG) $(SWAPIMG)
+ 	$(V)sleep 2
+ 	$(V)$(TERMINAL) -e "$(GDB) -q -x tools/gdbinit"
+ 
++qemu-mingw: $(UCOREIMG)
++	$(V)$(QEMU) -hda $< -serial null
++debug-mingw: $(UCOREIMG)
++	$(V)$(QEMU) -S -s -gdb tcp::1234,ipv4 $(QEMUOPTS) -serial null &
++	$(V)sleep 2
++	$(V)gdb -q -x tools/gdbinit
++
+ RUN_PREFIX	:= _binary_$(OBJDIR)_$(USER_PREFIX)
+ MAKEOPTS	:= --quiet --no-print-directory
+ 
+@@ -336,5 +347,5 @@ tags:
+ 	@echo TAGS ALL
+ 	$(V)rm -f cscope.files cscope.in.out cscope.out cscope.po.out tags
+ 	$(V)find . -type f -name "*.[chS]" >cscope.files
+-	$(V)cscope -bq 
++	$(V)cscope -bq
+ 	$(V)ctags -L cscope.files
+diff --git a/labcodes/lab8/Makefile b/labcodes/lab8/Makefile
+index 7c8978e..e8932b0 100644
+--- a/labcodes/lab8/Makefile
++++ b/labcodes/lab8/Makefile
+@@ -10,6 +10,8 @@ V       := @
+ ifndef GCCPREFIX
+ GCCPREFIX := $(shell if i386-ucore-elf-objdump -i 2>&1 | grep '^elf32-i386$$' >/dev/null 2>&1; \
+ 	then echo 'i386-ucore-elf-'; \
++	elif i386-jos-elf-objdump -i 2>&1 | grep 'elf32-i386' >/dev/null 2>&1; \
++	then echo 'i386-jos-elf-'; \
+ 	elif objdump -i 2>&1 | grep 'elf32-i386' >/dev/null 2>&1; \
+ 	then echo ''; \
+ 	else echo "***" 1>&2; \
+@@ -30,6 +32,8 @@ QEMU := $(shell if which qemu-system-i386 > /dev/null; \
+ 	then echo 'i386-elf-qemu'; exit; \
+ 	elif which qemu > /dev/null; \
+ 	then echo 'qemu'; exit; \
++	elif which qemu.exe > /dev/null; \
++	then echo 'qemu.exe'; exit; \
+ 	else \
+ 	echo "***" 1>&2; \
+ 	echo "*** Error: Couldn't find a working QEMU executable." 1>&2; \
+@@ -168,7 +172,7 @@ KINCLUDE	+= kern/debug/ \
+ 			   kern/fs/swap/ \
+ 			   kern/fs/vfs/ \
+ 			   kern/fs/devs/ \
+-			   kern/fs/sfs/ 
++			   kern/fs/sfs/
+ 
+ 
+ KSRCDIR		+= kern/init \
+@@ -305,7 +309,7 @@ TARGETS: $(TARGETS)
+ 
+ .DEFAULT_GOAL := TARGETS
+ 
+-QEMUOPTS = -hda $(UCOREIMG) -drive file=$(SWAPIMG),media=disk,cache=writeback -drive file=$(SFSIMG),media=disk,cache=writeback 
++QEMUOPTS = -hda $(UCOREIMG) -drive file=$(SWAPIMG),media=disk,cache=writeback -drive file=$(SFSIMG),media=disk,cache=writeback
+ 
+ .PHONY: qemu qemu-nox debug debug-nox monitor
+ qemu-mon: $(UCOREIMG) $(SWAPIMG) $(SFSIMG)
+@@ -331,6 +335,13 @@ debug-nox: $(UCOREIMG) $(SWAPIMG) $(SFSIMG)
+ 	$(V)sleep 2
+ 	$(V)$(TERMINAL) -e "$(GDB) -q -x tools/gdbinit"
+ 
++qemu-mingw: $(UCOREIMG)
++	$(V)$(QEMU) -hda $< -serial null
++debug-mingw: $(UCOREIMG)
++	$(V)$(QEMU) -S -s -gdb tcp::1234,ipv4 $(QEMUOPTS) -serial null &
++	$(V)sleep 2
++	$(V)gdb -q -x tools/gdbinit
++
+ RUN_PREFIX	:= _binary_$(OBJDIR)_$(USER_PREFIX)
+ MAKEOPTS	:= --quiet --no-print-directory
+ 
+@@ -341,7 +352,7 @@ sh-%: script-%
+ 	$(V)$(QEMU) -parallel stdio $(QEMUOPTS) -serial null
+ 
+ build-%: touch
+-	$(V)$(MAKE) $(MAKEOPTS) "DEFS+=-DTEST=$*" 
++	$(V)$(MAKE) $(MAKEOPTS) "DEFS+=-DTEST=$*"
+ 
+ script-%: touch
+ 	$(V)$(MAKE) $(MAKEOPTS) "DEFS+=-DTEST=sh -DTESTSCRIPT=/script/$*"
+@@ -385,5 +396,5 @@ tags:
+ 	@echo TAGS ALL
+ 	$(V)rm -f cscope.files cscope.in.out cscope.out cscope.po.out tags
+ 	$(V)find . -type f -name "*.[chS]" >cscope.files
+-	$(V)cscope -bq 
++	$(V)cscope -bq
+ 	$(V)ctags -L cscope.files
+-- 
+1.8.5.2.msysgit.0
+
